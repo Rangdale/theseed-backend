@@ -1,5 +1,5 @@
 const admin = require('firebase-admin');
-const { getApps } = require('firebase-admin/app');
+const { getApps, initializeApp, cert } = require('firebase-admin/app');
 
 let serviceAccount;
 
@@ -10,8 +10,8 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
 }
 
 if (!getApps().length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+  initializeApp({
+    credential: cert(serviceAccount)
   });
 }
 
