@@ -1,3 +1,5 @@
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('Firebase SA exists:', !!process.env.FIREBASE_SERVICE_ACCOUNT);
 require('dotenv').config();
 const app = require('./app');
 
