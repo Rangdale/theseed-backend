@@ -1,5 +1,5 @@
-const admin = require('firebase-admin');
-const { getApps, initializeApp, cert } = require('firebase-admin/app');
+const { initializeApp, getApps, cert } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
 
 let serviceAccount;
 
@@ -15,4 +15,4 @@ if (!getApps().length) {
   });
 }
 
-module.exports = admin;
+module.exports = { getAuth };
