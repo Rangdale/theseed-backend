@@ -1,9 +1,9 @@
 const { getAuth } = require('../config/firebase');
+const userRepository = require('../repositories/user.repository');
 
 const verifyToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    console.log('Auth header received:', authHeader ? 'present' : 'missing');
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'No token provided' });
@@ -11,6 +11,12 @@ const verifyToken = async (req, res, next) => {
 
     const token = authHeader.split('Bearer ')[1];
     const decodedToken = await getAuth().verifyIdToken(token);
+
+    // Ensure a corresponding row exists in our users table
+    await userRepository.findOrCreateUser({
+      uid: decodedToken.uid,
+      email: decodedToken.email
+    });
 
     req.user = {
       uid: decodedToken.uid,
