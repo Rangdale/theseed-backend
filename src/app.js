@@ -10,6 +10,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.use((req, res, next) => {
+    res.on('finish', () => {
+        console.log(`${req.method} ${req.originalUrl} → ${res.statusCode}`);
+    });
+    next();
+});
+
 app.use('/health', healthRouter);
 app.use('/auth', authRouter);
 app.use('/habits', habitRouter);
