@@ -25,13 +25,13 @@ const getCompletionRate = async (userId, days = 7) => {
 // Streak stability — average (current_streak / max_streak) per habit
 const getStreakStability = async (userId) => {
   const result = await pool.query(
-    `WITH streak_data AS (
+    `WITH completions AS (
        SELECT
          habit_id,
          completion_date,
          completion_date - (ROW_NUMBER() OVER (
            PARTITION BY habit_id ORDER BY completion_date
-         ) * INTERVAL '1 day')::date AS streak_group
+         ))::integer AS streak_group
        FROM habit_completions
        WHERE user_id = $1
      ),
@@ -39,23 +39,30 @@ const getStreakStability = async (userId) => {
        SELECT
          habit_id,
          COUNT(*) AS streak_length
-       FROM streak_data
+       FROM completions
        GROUP BY habit_id, streak_group
      ),
      habit_streaks AS (
        SELECT
          habit_id,
-         MAX(streak_length) AS max_streak,
-         (SELECT COUNT(*) FROM habit_completions hc2
-          WHERE hc2.habit_id = streak_lengths.habit_id
-            AND hc2.completion_date >= CURRENT_DATE - INTERVAL '30 days') AS recent_completions
+         MAX(streak_length) AS max_streak
        FROM streak_lengths
+       GROUP BY habit_id
+     ),
+     recent_completions AS (
+       SELECT
+         habit_id,
+         COUNT(*) AS recent_count
+       FROM habit_completions
+       WHERE user_id = $1
+         AND completion_date >= CURRENT_DATE - INTERVAL '30 days'
        GROUP BY habit_id
      )
      SELECT AVG(
-       LEAST(recent_completions::float / GREATEST(max_streak, 1), 1) * 100
+       LEAST(rc.recent_count::float / GREATEST(hs.max_streak, 1), 1) * 100
      ) AS stability
-     FROM habit_streaks`,
+     FROM habit_streaks hs
+     JOIN recent_completions rc ON rc.habit_id = hs.habit_id`,
     [userId]
   );
 
