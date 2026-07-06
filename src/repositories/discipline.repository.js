@@ -24,14 +24,31 @@ const getCompletionRate = async (userId, days = 7) => {
 
 // Streak stability — average (current_streak / max_streak) per habit
 const getStreakStability = async (userId) => {
+  // Get total days app has been used (days since first completion)
+  const summaryResult = await pool.query(
+    `SELECT
+       COUNT(*) AS total_completions,
+       COUNT(DISTINCT completion_date) AS active_days,
+       MIN(completion_date) AS first_completion
+     FROM habit_completions
+     WHERE user_id = $1`,
+    [userId]
+  );
+
+  const totalCompletions = parseInt(summaryResult.rows[0]?.total_completions || 0);
+  const activeDays = parseInt(summaryResult.rows[0]?.active_days || 0);
+
+  // Not enough data for meaningful stability
+  if (totalCompletions < 3) return 0;
+
   const result = await pool.query(
     `WITH completions AS (
        SELECT
          habit_id,
          completion_date,
-         completion_date - (ROW_NUMBER() OVER (
+         completion_date - ROW_NUMBER() OVER (
            PARTITION BY habit_id ORDER BY completion_date
-         ))::integer AS streak_group
+         )::integer AS streak_group
        FROM habit_completions
        WHERE user_id = $1
      ),
@@ -45,28 +62,37 @@ const getStreakStability = async (userId) => {
      habit_streaks AS (
        SELECT
          habit_id,
-         MAX(streak_length) AS max_streak
+         MAX(streak_length) AS max_streak,
+         COUNT(*) AS total_streaks
        FROM streak_lengths
        GROUP BY habit_id
-     ),
-     recent_completions AS (
-       SELECT
-         habit_id,
-         COUNT(*) AS recent_count
-       FROM habit_completions
-       WHERE user_id = $1
-         AND completion_date >= CURRENT_DATE - INTERVAL '30 days'
-       GROUP BY habit_id
      )
-     SELECT AVG(
-       LEAST(rc.recent_count::float / GREATEST(hs.max_streak, 1), 1) * 100
-     ) AS stability
-     FROM habit_streaks hs
-     JOIN recent_completions rc ON rc.habit_id = hs.habit_id`,
+     SELECT
+       AVG(
+         -- Penalize for having many short streaks vs one long one
+         max_streak::float / GREATEST(max_streak + total_streaks - 1, 1) * 100
+       ) AS stability
+     FROM habit_streaks`,
     [userId]
   );
 
-  return parseFloat(result.rows[0]?.stability || 0);
+  // Additionally penalize if user hasn't been consistent recently
+  // active_days out of last 14 days
+  const recentResult = await pool.query(
+    `SELECT COUNT(DISTINCT completion_date) AS recent_days
+     FROM habit_completions
+     WHERE user_id = $1
+       AND completion_date >= CURRENT_DATE - INTERVAL '14 days'`,
+    [userId]
+  );
+
+  const recentDays = parseInt(recentResult.rows[0]?.recent_days || 0);
+  const recencyFactor = Math.min(recentDays / 14, 1); // 0-1
+
+  const rawStability = parseFloat(result.rows[0]?.stability || 0);
+
+  // Blend formula stability with recency — both must be good for high score
+  return rawStability * recencyFactor;
 };
 
 // Difficulty-weighted completion rate
@@ -113,7 +139,8 @@ const getConsistencyTrend = async (userId) => {
            THEN 1 ELSE 0 END) AS this_week,
        SUM(CASE WHEN completion_date >= CURRENT_DATE - INTERVAL '14 days'
            AND completion_date < CURRENT_DATE - INTERVAL '7 days'
-           THEN 1 ELSE 0 END) AS last_week
+           THEN 1 ELSE 0 END) AS last_week,
+       COUNT(DISTINCT completion_date) AS total_active_days
      FROM habit_completions
      WHERE user_id = $1
        AND completion_date >= CURRENT_DATE - INTERVAL '14 days'`,
@@ -122,23 +149,25 @@ const getConsistencyTrend = async (userId) => {
 
   const thisWeek = parseInt(result.rows[0]?.this_week || 0);
   const lastWeek = parseInt(result.rows[0]?.last_week || 0);
+  const totalActiveDays = parseInt(result.rows[0]?.total_active_days || 0);
 
-  // No data at all → 0, not 50
+  // No data → 0
   if (thisWeek === 0 && lastWeek === 0) return 0;
 
-  // Has this week data but no last week → 
-  // score proportionally based on how many days have passed
+  // Only this week data — score based on daily completion rate this week
+  // Don't give a free 70, make them earn it
   if (lastWeek === 0) {
-    const dayOfWeek = new Date().getDay() || 7; // 1-7
-    const expectedByNow = thisWeek / dayOfWeek;
-    return Math.min(expectedByNow * 70, 70); // max 70 for first week
+    const dayOfWeek = new Date().getDay() || 7; // 1 = Monday, 7 = Sunday
+    // How many of the days so far this week did they complete habits?
+    const dailyRate = thisWeek / dayOfWeek;
+    return Math.min(dailyRate * 50, 50); // max 50 — can't be "improving" with no baseline
   }
 
-  // Normal case — ratio of this week to last week
-  // ratio = 1.0 means same as last week = 50 (neutral)
-  // ratio > 1.0 means improving = above 50
-  // ratio < 1.0 means declining = below 50
+  // Both weeks have data — compare honestly
   const ratio = thisWeek / lastWeek;
+  // ratio 1.0 = same performance = 50
+  // ratio 2.0 = twice as good = 100
+  // ratio 0.5 = half as good = 25
   return Math.min(Math.max(ratio * 50, 0), 100);
 };
 
