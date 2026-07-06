@@ -49,6 +49,35 @@ const calculateAndSave = async (userId) => {
       completionRate: 0
     });
 
+    const [
+        completionRate,
+        streakStability,
+        difficultyScore,
+        consistencyTrend
+    ] = await Promise.all([
+        disciplineRepository.getCompletionRate(userId),
+        disciplineRepository.getStreakStability(userId),
+        disciplineRepository.getDifficultyScore(userId),
+        disciplineRepository.getConsistencyTrend(userId)
+    ]);
+
+    console.log('=== DISCIPLINE SCORE BREAKDOWN ===');
+    console.log('completionRate:', completionRate);
+    console.log('streakStability:', streakStability);
+    console.log('difficultyScore:', difficultyScore);
+    console.log('consistencyTrend:', consistencyTrend);
+    console.log('weighted completionRate:', completionRate * 0.40);
+    console.log('weighted streakStability:', streakStability * 0.30);
+    console.log('weighted difficultyScore:', difficultyScore * 0.20);
+    console.log('weighted consistencyTrend:', consistencyTrend * 0.10);
+    console.log('raw total:', 
+        (completionRate * 0.40) + 
+        (streakStability * 0.30) + 
+        (difficultyScore * 0.20) + 
+        (consistencyTrend * 0.10)
+    );
+    console.log('==================================');
+
     return zeroScore;
   }
 
