@@ -8,10 +8,10 @@ const WEIGHTS = {
 };
 
 const GROWTH_STAGES = [
-  { min: 0,  max: 24,  stage: 'Seed',    level: 0 },
-  { min: 25, max: 49,  stage: 'Sprout',  level: 1 },
-  { min: 50, max: 74,  stage: 'Plant',   level: 2 },
-  { min: 75, max: 100, stage: 'Tree',    level: 3 }
+  { min: 0,  max: 24,  stage: 'Seed',   level: 0 },
+  { min: 25, max: 49,  stage: 'Sprout', level: 1 },
+  { min: 50, max: 74,  stage: 'Plant',  level: 2 },
+  { min: 75, max: 100, stage: 'Tree',   level: 3 }
 ];
 
 const getGrowthStage = (score) => {
@@ -19,7 +19,39 @@ const getGrowthStage = (score) => {
     || GROWTH_STAGES[0];
 };
 
+// Check if user has enough data to calculate a meaningful score
+const getUserDataSummary = async (userId) => {
+  const result = await disciplineRepository.getUserDataSummary(userId);
+  return result;
+};
+
 const calculateAndSave = async (userId) => {
+  // First check if user has any completions at all
+  const summary = await getUserDataSummary(userId);
+
+  // Not enough data — return honest zero state
+  if (summary.total_completions === 0) {
+    const zeroScore = {
+      score: 0,
+      consistencyScore: 0,
+      streakStability: 0,
+      completionRate: 0,
+      consistencyTrend: 0,
+      difficultyScore: 0,
+      growthStage: 'Seed',
+      growthLevel: 0
+    };
+
+    await disciplineRepository.saveScore(userId, {
+      score: 0,
+      consistencyScore: 0,
+      streakStability: 0,
+      completionRate: 0
+    });
+
+    return zeroScore;
+  }
+
   // Run all four component queries in parallel
   const [
     completionRate,
@@ -33,17 +65,22 @@ const calculateAndSave = async (userId) => {
     disciplineRepository.getConsistencyTrend(userId)
   ]);
 
-  // Apply weights and clamp to 0-100
+  console.log('Score components:', {
+    completionRate,
+    streakStability,
+    difficultyScore,
+    consistencyTrend
+  });
+
   const rawScore =
-    (completionRate  * WEIGHTS.completionRate) +
-    (streakStability * WEIGHTS.streakStability) +
-    (difficultyScore * WEIGHTS.difficultyScore) +
+    (completionRate   * WEIGHTS.completionRate) +
+    (streakStability  * WEIGHTS.streakStability) +
+    (difficultyScore  * WEIGHTS.difficultyScore) +
     (consistencyTrend * WEIGHTS.consistencyTrend);
 
   const score = Math.min(Math.max(Math.round(rawScore), 0), 100);
   const growthStage = getGrowthStage(score);
 
-  // Save snapshot to discipline_scores table
   await disciplineRepository.saveScore(userId, {
     score,
     consistencyScore: Math.round(completionRate),
@@ -57,6 +94,7 @@ const calculateAndSave = async (userId) => {
     streakStability: Math.round(streakStability),
     completionRate: Math.round(completionRate),
     consistencyTrend: Math.round(consistencyTrend),
+    difficultyScore: Math.round(difficultyScore),
     growthStage: growthStage.stage,
     growthLevel: growthStage.level
   };
@@ -66,7 +104,6 @@ const getCurrentScore = async (userId) => {
   const snapshot = await disciplineRepository.getLatestScore(userId);
 
   if (!snapshot) {
-    // No score yet — return zeroed state
     return {
       score: 0,
       consistencyScore: 0,

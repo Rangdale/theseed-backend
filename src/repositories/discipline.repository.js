@@ -120,17 +120,45 @@ const getConsistencyTrend = async (userId) => {
     [userId]
   );
 
-  const { this_week, last_week } = result.rows[0];
+  const thisWeek = parseInt(result.rows[0]?.this_week || 0);
+  const lastWeek = parseInt(result.rows[0]?.last_week || 0);
 
-  // If no history at all, neutral score
-  if (last_week === 0 && this_week === 0) return 50;
+  // No data at all → 0, not 50
+  if (thisWeek === 0 && lastWeek === 0) return 0;
 
-  // If no last week data but has this week, positive trend
-  if (last_week === 0) return 75;
+  // Has this week data but no last week → 
+  // score proportionally based on how many days have passed
+  if (lastWeek === 0) {
+    const dayOfWeek = new Date().getDay() || 7; // 1-7
+    const expectedByNow = thisWeek / dayOfWeek;
+    return Math.min(expectedByNow * 70, 70); // max 70 for first week
+  }
 
-  // Trend score: 50 = neutral, > 50 = improving, < 50 = declining
-  const ratio = this_week / last_week;
+  // Normal case — ratio of this week to last week
+  // ratio = 1.0 means same as last week = 50 (neutral)
+  // ratio > 1.0 means improving = above 50
+  // ratio < 1.0 means declining = below 50
+  const ratio = thisWeek / lastWeek;
   return Math.min(Math.max(ratio * 50, 0), 100);
+};
+
+const getUserDataSummary = async (userId) => {
+  const result = await pool.query(
+    `SELECT
+       COUNT(*) AS total_completions,
+       COUNT(DISTINCT completion_date) AS active_days,
+       COUNT(DISTINCT habit_id) AS habits_with_completions,
+       MIN(completion_date) AS first_completion,
+       MAX(completion_date) AS last_completion
+     FROM habit_completions
+     WHERE user_id = $1`,
+    [userId]
+  );
+  return {
+    total_completions: parseInt(result.rows[0]?.total_completions || 0),
+    active_days: parseInt(result.rows[0]?.active_days || 0),
+    habits_with_completions: parseInt(result.rows[0]?.habits_with_completions || 0)
+  };
 };
 
 // Save computed score as daily snapshot
@@ -187,6 +215,7 @@ module.exports = {
   getStreakStability,
   getDifficultyScore,
   getConsistencyTrend,
+  getUserDataSummary,
   saveScore,
   getLatestScore,
   getScoreHistory
