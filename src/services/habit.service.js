@@ -1,6 +1,6 @@
 const habitRepository = require('../repositories/habit.repository');
 
-const VALID_CATEGORIES = ['wellness', 'productivity', 'fitness', 'mindfulness', 'learning', 'nutrition', 'social', 'other'];
+const VALID_CATEGORIES = ['wellness', 'productivity', 'fitness', 'mindfulness', 'learning', 'nutrition', 'social', 'deep_work', 'other'];
 const VALID_DIFFICULTIES = ['easy', 'medium', 'hard'];
 const VALID_FREQUENCIES = ['daily', 'weekly'];
 
