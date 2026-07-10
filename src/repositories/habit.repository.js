@@ -1,11 +1,11 @@
 const pool = require('../db/pool');
 
-const createHabit = async ({ userId, title, category, difficulty, frequency, reminderTime }) => {
+const createHabit = async ({ userId, title, category, difficulty, frequency, reminderTime, durationMinutes }) => {
   const result = await pool.query(
-    `INSERT INTO habits (user_id, title, category, difficulty, frequency, reminder_time)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO habits (user_id, title, category, difficulty, frequency, reminder_time, duration_minutes)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *`,
-    [userId, title, category, difficulty, frequency, reminderTime]
+    [userId, title, category, difficulty, frequency, reminderTime, durationMinutes || null]
   );
   return result.rows[0];
 };

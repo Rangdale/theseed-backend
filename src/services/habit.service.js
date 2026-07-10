@@ -40,7 +40,8 @@ const createHabit = async (userId, habitData) => {
     category: habitData.category || 'other',
     difficulty: habitData.difficulty || 'medium',
     frequency: habitData.frequency || 'daily',
-    reminderTime: habitData.reminderTime || null
+    reminderTime: habitData.reminderTime || null,
+    durationMinutes: habitData.durationMinutes || null 
   });
 };
 
