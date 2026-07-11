@@ -68,7 +68,7 @@ const updateHabit = async (habitId, userId, habitData) => {
     throw error;
   }
 
-  const allowedFields = ['title', 'category', 'difficulty', 'frequency', 'reminder_time'];
+  const allowedFields = ['title', 'category', 'difficulty', 'frequency', 'reminder_time', 'duration_minutes'];
   const fields = {};
   for (const key of allowedFields) {
     const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
