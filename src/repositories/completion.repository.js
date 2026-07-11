@@ -57,16 +57,19 @@ const getStreakForHabit = async (habitId) => {
 
   if (result.rows.length === 0) return 0;
 
+  // Get today's date in IST
+  const now = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const istNow = new Date(now.getTime() + istOffset);
+  istNow.setHours(0, 0, 0, 0);
+
   let streak = 0;
-  let current = new Date();
-  current.setHours(0, 0, 0, 0);
+  let current = istNow;
 
   for (const row of result.rows) {
     const date = new Date(row.completion_date);
     date.setHours(0, 0, 0, 0);
-
     const diffDays = Math.round((current - date) / (1000 * 60 * 60 * 24));
-
     if (diffDays === 0 || diffDays === 1) {
       streak++;
       current = date;

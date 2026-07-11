@@ -133,9 +133,9 @@ const getAnalyticsData = async (userId, period) => {
   const peakTimesResult = await pool.query(
     `SELECT
        CASE
-         WHEN EXTRACT(HOUR FROM completed_at) BETWEEN 5 AND 11 THEN 'Morning'
-         WHEN EXTRACT(HOUR FROM completed_at) BETWEEN 12 AND 16 THEN 'Afternoon'
-         WHEN EXTRACT(HOUR FROM completed_at) BETWEEN 17 AND 21 THEN 'Evening'
+         WHEN EXTRACT(HOUR FROM completed_at AT TIME ZONE 'Asia/Kolkata') BETWEEN 5 AND 11 THEN 'Morning'
+         WHEN EXTRACT(HOUR FROM completed_at AT TIME ZONE 'Asia/Kolkata') BETWEEN 12 AND 16 THEN 'Afternoon'
+         WHEN EXTRACT(HOUR FROM completed_at AT TIME ZONE 'Asia/Kolkata') BETWEEN 17 AND 21 THEN 'Evening'
          ELSE 'Night'
        END AS time_of_day,
        COUNT(*) AS completions
