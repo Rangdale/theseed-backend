@@ -27,6 +27,7 @@ const validateHabitInput = ({ title, category, difficulty, frequency }) => {
 };
 
 const createHabit = async (userId, habitData) => {
+  console.log('Creating habit with data:', JSON.stringify(habitData));
   const errors = validateHabitInput(habitData);
   if (errors.length > 0) {
     const error = new Error(errors.join('; '));

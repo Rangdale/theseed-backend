@@ -1,23 +1,25 @@
 const pool = require('../db/pool');
 
-const markComplete = async ({ habitId, userId, completionDate }) => {
+const markComplete = async ({ habitId, userId }) => {
   const result = await pool.query(
     `INSERT INTO habit_completions (habit_id, user_id, completion_date)
-     VALUES ($1, $2, $3)
+     VALUES ($1, $2, (NOW() AT TIME ZONE 'Asia/Kolkata')::date)
      ON CONFLICT (habit_id, completion_date) DO NOTHING
      RETURNING *`,
-    [habitId, userId, completionDate]
+    [habitId, userId]
+    // No longer passing completionDate from JS — PostgreSQL computes it
   );
-  // Returns null if already completed today (DO NOTHING path)
   return result.rows[0] || null;
 };
 
-const markIncomplete = async ({ habitId, userId, completionDate }) => {
+const markIncomplete = async ({ habitId, userId }) => {
   const result = await pool.query(
     `DELETE FROM habit_completions
-     WHERE habit_id = $1 AND user_id = $2 AND completion_date = $3
+     WHERE habit_id = $1
+       AND user_id = $2
+       AND completion_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date
      RETURNING id`,
-    [habitId, userId, completionDate]
+    [habitId, userId]
   );
   return result.rows[0] || null;
 };
@@ -39,10 +41,9 @@ const getTodayCompletions = async (userId) => {
   const result = await pool.query(
     `SELECT habit_id FROM habit_completions
      WHERE user_id = $1
-       AND completion_date = CURRENT_DATE`,
+       AND completion_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date`,
     [userId]
   );
-  // Returns a Set of habit IDs completed today for O(1) lookup
   return new Set(result.rows.map(r => r.habit_id));
 };
 

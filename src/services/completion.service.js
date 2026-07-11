@@ -1,12 +1,8 @@
 const completionRepository = require('../repositories/completion.repository');
 const habitRepository = require('../repositories/habit.repository');
 
-const getToday = () => {
-  return new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
-};
 
 const toggleCompletion = async (habitId, userId) => {
-  // Verify the habit belongs to this user before touching completions
   const habit = await habitRepository.getHabitById(habitId, userId);
   if (!habit) {
     const error = new Error('Habit not found');
@@ -14,26 +10,22 @@ const toggleCompletion = async (habitId, userId) => {
     throw error;
   }
 
-  const today = getToday();
-
-  // Try to mark complete — returns null if already completed
   const completion = await completionRepository.markComplete({
     habitId,
-    userId,
-    completionDate: today
+    userId
   });
 
   if (completion) {
-    // Was not completed → now marked complete
-    return { completed: true, completionDate: today };
+    return {
+      completed: true,
+      completionDate: completion.completion_date
+    };
   } else {
-    // Was already completed → unmark it
-    await completionRepository.markIncomplete({
-      habitId,
-      userId,
-      completionDate: today
-    });
-    return { completed: false, completionDate: today };
+    await completionRepository.markIncomplete({ habitId, userId });
+    return {
+      completed: false,
+      completionDate: null
+    };
   }
 };
 

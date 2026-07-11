@@ -14,8 +14,8 @@ const getAnalyticsData = async (userId, period) => {
           AND is_active = true
           AND frequency = 'daily') AS total_habits
      FROM generate_series(
-       CURRENT_DATE - ($2 - 1) * INTERVAL '1 day',
-       CURRENT_DATE,
+       (NOW() AT TIME ZONE 'Asia/Kolkata')::date - ($2 - 1) * INTERVAL '1 day',
+       (NOW() AT TIME ZONE 'Asia/Kolkata')::date,
        INTERVAL '1 day'
      ) AS d(day_date)
      LEFT JOIN habit_completions hc
@@ -34,7 +34,7 @@ const getAnalyticsData = async (userId, period) => {
      FROM habits h
      LEFT JOIN habit_completions hc
        ON hc.habit_id = h.id
-       AND hc.completion_date >= CURRENT_DATE - ($2 - 1) * INTERVAL '1 day'
+       AND hc.completion_date >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date - ($2 - 1) * INTERVAL '1 day'
        AND hc.user_id = $1
      WHERE h.user_id = $1
        AND h.is_active = true
@@ -50,8 +50,8 @@ const getAnalyticsData = async (userId, period) => {
      FROM habits h
      LEFT JOIN habit_completions hc
        ON hc.habit_id = h.id
-       AND hc.completion_date >= CURRENT_DATE - ($3 - 1) * INTERVAL '1 day'
-       AND hc.completion_date < CURRENT_DATE - ($2 - 1) * INTERVAL '1 day'
+       AND hc.completion_date >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date - ($3 - 1) * INTERVAL '1 day'
+       AND hc.completion_date < (NOW() AT TIME ZONE 'Asia/Kolkata')::date - ($2 - 1) * INTERVAL '1 day'
        AND hc.user_id = $1
      WHERE h.user_id = $1
        AND h.is_active = true
@@ -80,7 +80,7 @@ const getAnalyticsData = async (userId, period) => {
        MAX(streak_length) AS longest_streak,
        (SELECT COUNT(*) FROM habit_completions
         WHERE user_id = $1
-          AND completion_date >= CURRENT_DATE - INTERVAL '30 days') AS recent_completions
+          AND completion_date >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '30 days') AS recent_completions
      FROM streak_lengths`,
     [userId]
   );
@@ -105,7 +105,7 @@ const getAnalyticsData = async (userId, period) => {
          SELECT MAX(completion_date)
          FROM habit_completions
          WHERE user_id = $1
-           AND completion_date >= CURRENT_DATE - INTERVAL '1 day'
+           AND completion_date >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '1 day'
        )
      )`,
     [userId]
@@ -120,7 +120,7 @@ const getAnalyticsData = async (userId, period) => {
      FROM habits h
      LEFT JOIN habit_completions hc
        ON hc.habit_id = h.id
-       AND hc.completion_date >= CURRENT_DATE - ($2 - 1) * INTERVAL '1 day'
+       AND hc.completion_date >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date - ($2 - 1) * INTERVAL '1 day'
      WHERE h.user_id = $1
        AND h.is_active = true
      GROUP BY h.id, h.title
@@ -141,7 +141,7 @@ const getAnalyticsData = async (userId, period) => {
        COUNT(*) AS completions
      FROM habit_completions
      WHERE user_id = $1
-       AND completion_date >= CURRENT_DATE - ($2 - 1) * INTERVAL '1 day'
+       AND completion_date >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date - ($2 - 1) * INTERVAL '1 day'
      GROUP BY time_of_day
      ORDER BY completions DESC`,
     [userId, days]
@@ -155,7 +155,7 @@ const getAnalyticsData = async (userId, period) => {
      JOIN habits h ON h.id = hc.habit_id
      WHERE hc.user_id = $1
        AND h.category = 'deep_work'
-       AND hc.completion_date >= CURRENT_DATE - ($2 - 1) * INTERVAL '1 day'`,
+       AND hc.completion_date >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date - ($2 - 1) * INTERVAL '1 day'`,
     [userId, days]
   );
 

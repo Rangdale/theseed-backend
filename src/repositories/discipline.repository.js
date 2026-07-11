@@ -10,7 +10,7 @@ const getCompletionRate = async (userId, days = 7) => {
      LEFT JOIN habit_completions hc
        ON hc.habit_id = h.id
        AND hc.user_id = $1
-       AND hc.completion_date >= CURRENT_DATE - INTERVAL '1 day' * $2
+       AND hc.completion_date >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '1 day' * $2
      WHERE h.user_id = $1
        AND h.is_active = true
        AND h.frequency = 'daily'`,
@@ -82,7 +82,7 @@ const getStreakStability = async (userId) => {
     `SELECT COUNT(DISTINCT completion_date) AS recent_days
      FROM habit_completions
      WHERE user_id = $1
-       AND completion_date >= CURRENT_DATE - INTERVAL '14 days'`,
+       AND completion_date >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '14 days'`,
     [userId]
   );
 
@@ -105,7 +105,7 @@ const getDifficultyScore = async (userId, days = 7) => {
      FROM habits h
      LEFT JOIN habit_completions hc
        ON hc.habit_id = h.id
-       AND hc.completion_date >= CURRENT_DATE - INTERVAL '1 day' * $2
+       AND hc.completion_date >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '1 day' * $2
      WHERE h.user_id = $1
        AND h.is_active = true
        AND h.frequency = 'daily'
@@ -135,15 +135,15 @@ const getDifficultyScore = async (userId, days = 7) => {
 const getConsistencyTrend = async (userId) => {
   const result = await pool.query(
     `SELECT
-       SUM(CASE WHEN completion_date >= CURRENT_DATE - INTERVAL '7 days'
+       SUM(CASE WHEN completion_date >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '7 days'
            THEN 1 ELSE 0 END) AS this_week,
-       SUM(CASE WHEN completion_date >= CURRENT_DATE - INTERVAL '14 days'
-           AND completion_date < CURRENT_DATE - INTERVAL '7 days'
+       SUM(CASE WHEN completion_date >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '14 days'
+           AND completion_date < (NOW() AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '7 days'
            THEN 1 ELSE 0 END) AS last_week,
        COUNT(DISTINCT completion_date) AS total_active_days
      FROM habit_completions
      WHERE user_id = $1
-       AND completion_date >= CURRENT_DATE - INTERVAL '14 days'`,
+       AND completion_date >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '14 days'`,
     [userId]
   );
 
@@ -200,7 +200,7 @@ const saveScore = async (userId, {
   const result = await pool.query(
     `INSERT INTO discipline_scores
        (user_id, score, consistency_score, streak_stability, completion_rate, score_date)
-     VALUES ($1, $2, $3, $4, $5, CURRENT_DATE)
+     VALUES ($1, $2, $3, $4, $5, (NOW() AT TIME ZONE 'Asia/Kolkata')::date)
      ON CONFLICT (user_id, score_date)
      DO UPDATE SET
        score = $2,
@@ -232,7 +232,7 @@ const getScoreHistory = async (userId, days = 30) => {
     `SELECT score, consistency_score, score_date
      FROM discipline_scores
      WHERE user_id = $1
-       AND score_date >= CURRENT_DATE - INTERVAL '1 day' * $2
+       AND score_date >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '1 day' * $2
      ORDER BY score_date ASC`,
     [userId, days]
   );

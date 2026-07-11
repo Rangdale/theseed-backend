@@ -14,7 +14,7 @@ const getDashboardData = async (userId) => {
      FROM habits h
      LEFT JOIN habit_completions hc
        ON hc.habit_id = h.id
-       AND hc.completion_date = CURRENT_DATE
+       AND hc.completion_date = (NOW() AT TIME ZONE 'Asia/Kolkata')::date
        AND hc.user_id = $1
      WHERE h.user_id = $1
        AND h.is_active = true
@@ -30,8 +30,8 @@ const getDashboardData = async (userId) => {
        (SELECT COUNT(*) FROM habits
         WHERE user_id = $1 AND is_active = true AND frequency = 'daily') AS total_habits
      FROM generate_series(
-       CURRENT_DATE - INTERVAL '6 days',
-       CURRENT_DATE,
+       (NOW() AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '6 days',
+       (NOW() AT TIME ZONE 'Asia/Kolkata')::date,
        INTERVAL '1 day'
      ) AS d(day_date)
      LEFT JOIN habit_completions hc
@@ -59,9 +59,9 @@ const getDashboardData = async (userId) => {
          FROM habit_completions
          WHERE user_id = $1
        ) grouped
-       WHERE completion_date >= CURRENT_DATE - INTERVAL '60 days'
+       WHERE completion_date >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '60 days'
        GROUP BY habit_id, streak_group
-       HAVING MAX(completion_date) >= CURRENT_DATE - INTERVAL '1 day'
+       HAVING MAX(completion_date) >= (NOW() AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '1 day'
      ) streaks`,
     [userId]
   );
@@ -74,8 +74,8 @@ const getDashboardData = async (userId) => {
        (SELECT COUNT(*) FROM habits
         WHERE user_id = $1 AND is_active = true) AS total_habits
      FROM generate_series(
-       CURRENT_DATE - INTERVAL '34 days',
-       CURRENT_DATE,
+       (NOW() AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '34 days',
+       (NOW() AT TIME ZONE 'Asia/Kolkata')::date,
        INTERVAL '1 day'
      ) AS d(day_date)
      LEFT JOIN habit_completions hc
