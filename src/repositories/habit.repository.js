@@ -1,12 +1,17 @@
 const pool = require('../db/pool');
 
 const createHabit = async ({ userId, title, category, difficulty, frequency, reminderTime, durationMinutes }) => {
+  console.log('Repository createHabit called with durationMinutes:', durationMinutes);
+  console.log('Full params:', [userId, title, category, difficulty, frequency, reminderTime, durationMinutes]);
+  
   const result = await pool.query(
     `INSERT INTO habits (user_id, title, category, difficulty, frequency, reminder_time, duration_minutes)
      VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *`,
     [userId, title, category, difficulty, frequency, reminderTime, durationMinutes || null]
   );
+  
+  console.log('Inserted habit:', result.rows[0]);
   return result.rows[0];
 };
 
