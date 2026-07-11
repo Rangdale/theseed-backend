@@ -7,7 +7,6 @@ const markComplete = async ({ habitId, userId }) => {
      ON CONFLICT (habit_id, completion_date) DO NOTHING
      RETURNING *`,
     [habitId, userId]
-    // No longer passing completionDate from JS — PostgreSQL computes it
   );
   return result.rows[0] || null;
 };

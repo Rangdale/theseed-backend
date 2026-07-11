@@ -1,7 +1,6 @@
 const completionRepository = require('../repositories/completion.repository');
 const habitRepository = require('../repositories/habit.repository');
 
-
 const toggleCompletion = async (habitId, userId) => {
   const habit = await habitRepository.getHabitById(habitId, userId);
   if (!habit) {
@@ -10,10 +9,7 @@ const toggleCompletion = async (habitId, userId) => {
     throw error;
   }
 
-  const completion = await completionRepository.markComplete({
-    habitId,
-    userId
-  });
+  const completion = await completionRepository.markComplete({ habitId, userId });
 
   if (completion) {
     return {
