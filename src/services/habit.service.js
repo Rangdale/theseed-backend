@@ -60,7 +60,6 @@ const getHabit = async (habitId, userId) => {
 };
 
 const updateHabit = async (habitId, userId, habitData) => {
-  // Only validate fields that were actually provided
   const errors = validateHabitInput({ title: habitData.title || 'placeholder', ...habitData });
   if (errors.length > 0) {
     const error = new Error(errors.join('; '));
@@ -70,10 +69,18 @@ const updateHabit = async (habitId, userId, habitData) => {
 
   const allowedFields = ['title', 'category', 'difficulty', 'frequency', 'reminder_time', 'duration_minutes'];
   const fields = {};
+
   for (const key of allowedFields) {
     const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
-    if (habitData[camelKey] !== undefined) {
-      fields[key] = habitData[camelKey];
+    // Check both camelCase and snake_case versions
+    const value = habitData[camelKey] !== undefined
+      ? habitData[camelKey]
+      : habitData[key] !== undefined
+        ? habitData[key]
+        : undefined;
+
+    if (value !== undefined) {
+      fields[key] = value;
     }
   }
 
