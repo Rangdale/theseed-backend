@@ -9,10 +9,12 @@ const getProfileData = async (userId) => {
     [userId]
   );
 
-  // Total habits ever created (including soft deleted)
+  // Total habits created
   const totalHabitsResult = await pool.query(
     `SELECT COUNT(*) AS total_habits
-     FROM habits WHERE user_id = $1`,
+    FROM habits
+    WHERE user_id = $1
+      AND is_active = true`,
     [userId]
   );
 
