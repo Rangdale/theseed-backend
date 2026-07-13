@@ -4,8 +4,8 @@ const getProfileData = async (userId) => {
 
   // User info
   const userResult = await pool.query(
-    `SELECT id, email, display_name, created_at
-     FROM users WHERE id = $1`,
+    `SELECT id, email, display_name, photo_url, created_at
+    FROM users WHERE id = $1`,
     [userId]
   );
 
@@ -79,14 +79,15 @@ const getProfileData = async (userId) => {
   // Best month (month with most completions)
   const bestMonthResult = await pool.query(
     `SELECT
-       TO_CHAR(completion_date, 'Month YYYY') AS month_label,
-       COUNT(*) AS completions
-     FROM habit_completions
-     WHERE user_id = $1
-     GROUP BY TO_CHAR(completion_date, 'Month YYYY'),
-              DATE_TRUNC('month', completion_date)
-     ORDER BY completions DESC
-     LIMIT 1`,
+        TO_CHAR(completion_date, 'FMMonth YYYY') AS month_label,
+        COUNT(*) AS completions
+    FROM habit_completions
+    WHERE user_id = $1
+    GROUP BY
+        TO_CHAR(completion_date, 'FMMonth YYYY'),
+        DATE_TRUNC('month', completion_date)
+    ORDER BY completions DESC
+    LIMIT 1`,
     [userId]
   );
 

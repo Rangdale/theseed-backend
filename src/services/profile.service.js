@@ -31,6 +31,7 @@ const getProfile = async (userId) => {
   return {
     displayName,
     email: data.user?.email || '',
+    photoUrl: data.user?.photo_url || null,
     memberSince,
     totalHabits: data.totalHabits,
     totalCompletions: data.totalCompletions,
