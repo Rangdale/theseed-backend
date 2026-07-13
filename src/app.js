@@ -8,6 +8,7 @@ const { errorHandler } = require('./middleware/error.middleware');
 const disciplineRouter = require('./routes/discipline.routes');
 const homeRouter = require('./routes/home.routes');
 const analyticsRouter = require('./routes/analytics.routes');
+const profileRouter = require('./routes/profile.routes');
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use('/completions', completionRouter);
 app.use('/discipline', disciplineRouter);
 app.use('/home', homeRouter);
 app.use('/analytics', analyticsRouter);
+app.use('/profile', profileRouter);
 
 app.use((req, res) => {
     res.status(404).json({ error: 'Route not found' });
